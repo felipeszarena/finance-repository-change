@@ -5,451 +5,345 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { Checkbox } from "@/components/ui/checkbox"
+import { TransactionForm } from "@/components/transaction-form"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import {
-  Plus,
-  Search,
   Filter,
+  Search,
   Download,
-  Upload,
   MoreHorizontal,
   Edit,
   Trash2,
-  ArrowUpDown,
-  X,
-  DollarSign,
   TrendingUp,
   TrendingDown,
+  Calendar,
+  ArrowUpDown,
 } from "lucide-react"
-import { TransactionForm } from "@/components/transaction-form"
-import { useApp } from "@/contexts/app-context"
+
+const transactions = [
+  {
+    id: 1,
+    description: "Salário",
+    amount: 8500,
+    type: "receita",
+    category: "Salário",
+    date: "2024-06-15",
+    company: "Finance Pessoal",
+    paymentMethod: "Transferência",
+  },
+  {
+    id: 2,
+    description: "Supermercado Extra",
+    amount: -320,
+    type: "despesa",
+    category: "Alimentação",
+    date: "2024-06-14",
+    company: "Finance Pessoal",
+    paymentMethod: "Cartão de Débito",
+  },
+  {
+    id: 3,
+    description: "Uber",
+    amount: -45,
+    type: "despesa",
+    category: "Transporte",
+    date: "2024-06-14",
+    company: "Finance Pessoal",
+    paymentMethod: "PIX",
+  },
+  {
+    id: 4,
+    description: "Freelance Design",
+    amount: 1200,
+    type: "receita",
+    category: "Freelance",
+    date: "2024-06-13",
+    company: "Empresa 1",
+    paymentMethod: "PIX",
+  },
+  {
+    id: 5,
+    description: "Conta de Luz",
+    amount: -180,
+    type: "despesa",
+    category: "Moradia",
+    date: "2024-06-12",
+    company: "Finance Pessoal",
+    paymentMethod: "Boleto",
+  },
+  {
+    id: 6,
+    description: "Academia",
+    amount: -89,
+    type: "despesa",
+    category: "Saúde",
+    date: "2024-06-11",
+    company: "Finance Pessoal",
+    paymentMethod: "Cartão de Crédito",
+  },
+  {
+    id: 7,
+    description: "Dividendos",
+    amount: 450,
+    type: "receita",
+    category: "Investimentos",
+    date: "2024-06-10",
+    company: "Finance Pessoal",
+    paymentMethod: "Transferência",
+  },
+  {
+    id: 8,
+    description: "Cinema",
+    amount: -35,
+    type: "despesa",
+    category: "Lazer",
+    date: "2024-06-09",
+    company: "Finance Pessoal",
+    paymentMethod: "Cartão de Crédito",
+  },
+]
 
 export default function TransacoesPage() {
-  const { transactions, currentCompany, deleteTransaction } = useApp()
-  const [selectedTransactions, setSelectedTransactions] = useState<string[]>([])
-  const [filters, setFilters] = useState({
-    search: "",
-    category: "",
-    type: "",
-    dateRange: "",
-    paymentMethod: "",
-  })
-  const [sortBy, setSortBy] = useState<"date" | "amount" | "description">("date")
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc")
+  const [searchTerm, setSearchTerm] = useState("")
+  const [categoryFilter, setCategoryFilter] = useState("all")
+  const [typeFilter, setTypeFilter] = useState("all")
+  const [companyFilter, setCompanyFilter] = useState("all")
+  const [sortBy, setSortBy] = useState("date")
+  const [sortOrder, setSortOrder] = useState("desc")
 
-  // Filter transactions by current company
-  const companyTransactions = transactions.filter((t) => t.company === currentCompany)
-
-  // Apply filters
-  const filteredTransactions = companyTransactions.filter((transaction) => {
-    const matchesSearch =
-      !filters.search ||
-      transaction.description.toLowerCase().includes(filters.search.toLowerCase()) ||
-      transaction.category.toLowerCase().includes(filters.search.toLowerCase())
-
-    const matchesCategory = !filters.category || transaction.category === filters.category
-    const matchesType = !filters.type || transaction.type === filters.type
-    const matchesPaymentMethod = !filters.paymentMethod || transaction.paymentMethod === filters.paymentMethod
-
-    return matchesSearch && matchesCategory && matchesType && matchesPaymentMethod
-  })
-
-  // Sort transactions
-  const sortedTransactions = [...filteredTransactions].sort((a, b) => {
-    let comparison = 0
-
-    switch (sortBy) {
-      case "date":
-        comparison = new Date(a.date).getTime() - new Date(b.date).getTime()
-        break
-      case "amount":
-        comparison = a.amount - b.amount
-        break
-      case "description":
-        comparison = a.description.localeCompare(b.description)
-        break
-    }
-
-    return sortOrder === "asc" ? comparison : -comparison
-  })
-
-  // Calculate summary
-  const totalReceitas = companyTransactions
-    .filter((t) => t.type === "receita")
-    .reduce((acc, curr) => acc + curr.amount, 0)
-
-  const totalDespesas = companyTransactions
-    .filter((t) => t.type === "despesa")
-    .reduce((acc, curr) => acc + curr.amount, 0)
-
-  const saldoTotal = totalReceitas - totalDespesas
-
-  const handleSelectTransaction = (transactionId: string) => {
-    setSelectedTransactions((prev) =>
-      prev.includes(transactionId) ? prev.filter((id) => id !== transactionId) : [...prev, transactionId],
-    )
-  }
-
-  const handleSelectAll = () => {
-    if (selectedTransactions.length === sortedTransactions.length) {
-      setSelectedTransactions([])
-    } else {
-      setSelectedTransactions(sortedTransactions.map((t) => t.id))
-    }
-  }
-
-  const handleDeleteSelected = () => {
-    selectedTransactions.forEach((id) => deleteTransaction(id))
-    setSelectedTransactions([])
-  }
-
-  const clearFilters = () => {
-    setFilters({
-      search: "",
-      category: "",
-      type: "",
-      dateRange: "",
-      paymentMethod: "",
+  const filteredTransactions = transactions
+    .filter((transaction) => {
+      const matchesSearch = transaction.description.toLowerCase().includes(searchTerm.toLowerCase())
+      const matchesCategory = categoryFilter === "all" || transaction.category === categoryFilter
+      const matchesType = typeFilter === "all" || transaction.type === typeFilter
+      const matchesCompany = companyFilter === "all" || transaction.company === companyFilter
+      return matchesSearch && matchesCategory && matchesType && matchesCompany
     })
-  }
+    .sort((a, b) => {
+      const order = sortOrder === "asc" ? 1 : -1
+      switch (sortBy) {
+        case "date":
+          return order * (new Date(a.date).getTime() - new Date(b.date).getTime())
+        case "amount":
+          return order * (Math.abs(a.amount) - Math.abs(b.amount))
+        case "description":
+          return order * a.description.localeCompare(b.description)
+        default:
+          return 0
+      }
+    })
 
-  const hasActiveFilters = Object.values(filters).some((value) => value !== "")
+  const totalReceitas = filteredTransactions.filter((t) => t.type === "receita").reduce((acc, t) => acc + t.amount, 0)
 
-  const categories = Array.from(new Set(companyTransactions.map((t) => t.category)))
-  const paymentMethods = Array.from(new Set(companyTransactions.map((t) => t.paymentMethod)))
+  const totalDespesas = filteredTransactions
+    .filter((t) => t.type === "despesa")
+    .reduce((acc, t) => acc + Math.abs(t.amount), 0)
+
+  const saldo = totalReceitas - totalDespesas
+
+  const categories = [...new Set(transactions.map((t) => t.category))]
+  const companies = [...new Set(transactions.map((t) => t.company))]
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="p-6 space-y-6">
       {/* Header */}
-      <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Transações</h1>
-            <p className="text-gray-600 dark:text-gray-400">Gerencie suas receitas e despesas • {currentCompany}</p>
-          </div>
-          <div className="flex items-center gap-3">
-            <Button variant="outline">
-              <Upload className="h-4 w-4 mr-2" />
-              Importar
-            </Button>
-            <Button variant="outline">
-              <Download className="h-4 w-4 mr-2" />
-              Exportar
-            </Button>
-            <TransactionForm />
-          </div>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Transações</h1>
+          <p className="text-gray-600 dark:text-gray-400">Gerencie todas as suas transações financeiras</p>
         </div>
-      </header>
-
-      <div className="p-6">
-        {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-          <Card className="bg-gradient-to-r from-green-500 to-green-600 text-white">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium opacity-90">Total Receitas</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center justify-between">
-                <div className="text-2xl font-bold">R$ {totalReceitas.toLocaleString("pt-BR")}</div>
-                <TrendingUp className="h-6 w-6 opacity-90" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-gradient-to-r from-red-500 to-red-600 text-white">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium opacity-90">Total Despesas</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center justify-between">
-                <div className="text-2xl font-bold">R$ {totalDespesas.toLocaleString("pt-BR")}</div>
-                <TrendingDown className="h-6 w-6 opacity-90" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-gradient-to-r from-blue-500 to-blue-600 text-white">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium opacity-90">Saldo Total</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center justify-between">
-                <div className="text-2xl font-bold">R$ {saldoTotal.toLocaleString("pt-BR")}</div>
-                <DollarSign className="h-6 w-6 opacity-90" />
-              </div>
-            </CardContent>
-          </Card>
+        <div className="flex items-center gap-3">
+          <Button variant="outline">
+            <Download className="h-4 w-4 mr-2" />
+            Exportar
+          </Button>
+          <TransactionForm />
         </div>
+      </div>
 
-        {/* Filters and Actions */}
-        <Card className="mb-6">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle>Filtros e Ações</CardTitle>
-              {selectedTransactions.length > 0 && (
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-gray-600 dark:text-gray-400">
-                    {selectedTransactions.length} selecionadas
-                  </span>
-                  <Button variant="outline" onClick={handleDeleteSelected}>
-                    Excluir Selecionadas
-                  </Button>
-                </div>
-              )}
-            </div>
+      {/* Summary Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <Card className="bg-gradient-to-r from-green-500 to-green-600 text-white">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium opacity-90">Total Receitas</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Search and Quick Filters */}
-            <div className="flex items-center gap-4">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <Input
-                  placeholder="Buscar por descrição ou categoria..."
-                  value={filters.search}
-                  onChange={(e) => setFilters({ ...filters, search: e.target.value })}
-                  className="pl-10"
-                />
-              </div>
-              {hasActiveFilters && (
-                <Button variant="outline" onClick={clearFilters}>
-                  <X className="h-4 w-4 mr-2" />
-                  Limpar Filtros
-                </Button>
-              )}
-            </div>
-
-            {/* Advanced Filters */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <Select value={filters.category} onValueChange={(value) => setFilters({ ...filters, category: value })}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Categoria" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todas as categorias</SelectItem>
-                  {categories.map((category) => (
-                    <SelectItem key={category} value={category}>
-                      {category}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              <Select value={filters.type} onValueChange={(value) => setFilters({ ...filters, type: value })}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Tipo" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos os tipos</SelectItem>
-                  <SelectItem value="receita">Receitas</SelectItem>
-                  <SelectItem value="despesa">Despesas</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <Select
-                value={filters.paymentMethod}
-                onValueChange={(value) => setFilters({ ...filters, paymentMethod: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Forma de Pagamento" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todas as formas</SelectItem>
-                  {paymentMethods.map((method) => (
-                    <SelectItem key={method} value={method}>
-                      {method}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              <Select value={filters.dateRange} onValueChange={(value) => setFilters({ ...filters, dateRange: value })}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Período" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos os períodos</SelectItem>
-                  <SelectItem value="today">Hoje</SelectItem>
-                  <SelectItem value="week">Esta semana</SelectItem>
-                  <SelectItem value="month">Este mês</SelectItem>
-                  <SelectItem value="year">Este ano</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+          <CardContent>
+            <div className="text-2xl font-bold">R$ {totalReceitas.toLocaleString("pt-BR")}</div>
+            <p className="text-xs opacity-90 mt-1">
+              <TrendingUp className="inline h-3 w-3 mr-1" />
+              {filteredTransactions.filter((t) => t.type === "receita").length} transações
+            </p>
           </CardContent>
         </Card>
 
-        {/* Transactions Table */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle>Lista de Transações ({sortedTransactions.length})</CardTitle>
-              <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm">
-                  <Filter className="h-4 w-4 mr-2" />
-                  Ordenar por
-                </Button>
-              </div>
-            </div>
+        <Card className="bg-gradient-to-r from-red-500 to-red-600 text-white">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium opacity-90">Total Despesas</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-12">
-                      <Checkbox
-                        checked={
-                          selectedTransactions.length === sortedTransactions.length && sortedTransactions.length > 0
-                        }
-                        onCheckedChange={handleSelectAll}
-                      />
-                    </TableHead>
-                    <TableHead>
-                      <Button
-                        variant="ghost"
-                        onClick={() => {
-                          setSortBy("description")
-                          setSortOrder(sortBy === "description" && sortOrder === "asc" ? "desc" : "asc")
-                        }}
-                      >
-                        Descrição
-                        <ArrowUpDown className="ml-2 h-4 w-4" />
-                      </Button>
-                    </TableHead>
-                    <TableHead>
-                      <Button
-                        variant="ghost"
-                        onClick={() => {
-                          setSortBy("amount")
-                          setSortOrder(sortBy === "amount" && sortOrder === "asc" ? "desc" : "asc")
-                        }}
-                      >
-                        Valor
-                        <ArrowUpDown className="ml-2 h-4 w-4" />
-                      </Button>
-                    </TableHead>
-                    <TableHead>Categoria</TableHead>
-                    <TableHead>
-                      <Button
-                        variant="ghost"
-                        onClick={() => {
-                          setSortBy("date")
-                          setSortOrder(sortBy === "date" && sortOrder === "asc" ? "desc" : "asc")
-                        }}
-                      >
-                        Data
-                        <ArrowUpDown className="ml-2 h-4 w-4" />
-                      </Button>
-                    </TableHead>
-                    <TableHead>Pagamento</TableHead>
-                    <TableHead className="w-12"></TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {sortedTransactions.map((transaction) => (
-                    <TableRow key={transaction.id}>
-                      <TableCell>
-                        <Checkbox
-                          checked={selectedTransactions.includes(transaction.id)}
-                          onCheckedChange={() => handleSelectTransaction(transaction.id)}
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <div>
-                          <div className="font-medium">{transaction.description}</div>
-                          {transaction.notes && <div className="text-sm text-gray-500">{transaction.notes}</div>}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div
-                          className={`font-semibold ${
-                            transaction.type === "receita" ? "text-green-600" : "text-red-600"
-                          }`}
-                        >
-                          {transaction.type === "receita" ? "+" : "-"}R$ {transaction.amount.toLocaleString("pt-BR")}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline">{transaction.category}</Badge>
-                      </TableCell>
-                      <TableCell>{new Date(transaction.date).toLocaleDateString("pt-BR")}</TableCell>
-                      <TableCell>
-                        <span className="text-sm text-gray-600">{transaction.paymentMethod}</span>
-                      </TableCell>
-                      <TableCell>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem>
-                              <Edit className="h-4 w-4 mr-2" />
-                              Editar
-                            </DropdownMenuItem>
-                            <DropdownMenuItem>Duplicar</DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem
-                              className="text-red-600"
-                              onClick={() => deleteTransaction(transaction.id)}
-                            >
-                              <Trash2 className="h-4 w-4 mr-2" />
-                              Excluir
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+            <div className="text-2xl font-bold">R$ {totalDespesas.toLocaleString("pt-BR")}</div>
+            <p className="text-xs opacity-90 mt-1">
+              <TrendingDown className="inline h-3 w-3 mr-1" />
+              {filteredTransactions.filter((t) => t.type === "despesa").length} transações
+            </p>
+          </CardContent>
+        </Card>
 
-              {sortedTransactions.length === 0 && (
-                <div className="text-center py-12">
-                  <div className="text-gray-500 mb-4">
-                    {hasActiveFilters
-                      ? "Nenhuma transação encontrada com os filtros aplicados"
-                      : "Nenhuma transação encontrada"}
-                  </div>
-                  {hasActiveFilters ? (
-                    <Button variant="outline" onClick={clearFilters}>
-                      Limpar filtros
-                    </Button>
-                  ) : (
-                    <TransactionForm
-                      trigger={
-                        <Button>
-                          <Plus className="h-4 w-4 mr-2" />
-                          Adicionar primeira transação
-                        </Button>
-                      }
-                    />
-                  )}
-                </div>
-              )}
-            </div>
+        <Card className="bg-gradient-to-r from-blue-500 to-blue-600 text-white">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium opacity-90">Saldo</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">R$ {saldo.toLocaleString("pt-BR")}</div>
+            <p className="text-xs opacity-90 mt-1">
+              <Calendar className="inline h-3 w-3 mr-1" />
+              {filteredTransactions.length} transações total
+            </p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Floating Action Button */}
-      <TransactionForm
-        trigger={
-          <Button className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg" size="icon">
-            <Plus className="h-6 w-6" />
-          </Button>
-        }
-      />
+      {/* Filters */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Filter className="h-5 w-5" />
+            Filtros
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Input
+                placeholder="Buscar transações..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+
+            <Select value={typeFilter} onValueChange={setTypeFilter}>
+              <SelectTrigger>
+                <SelectValue placeholder="Tipo" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos os tipos</SelectItem>
+                <SelectItem value="receita">Receitas</SelectItem>
+                <SelectItem value="despesa">Despesas</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+              <SelectTrigger>
+                <SelectValue placeholder="Categoria" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas as categorias</SelectItem>
+                {categories.map((category) => (
+                  <SelectItem key={category} value={category}>
+                    {category}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={companyFilter} onValueChange={setCompanyFilter}>
+              <SelectTrigger>
+                <SelectValue placeholder="Empresa" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas as empresas</SelectItem>
+                {companies.map((company) => (
+                  <SelectItem key={company} value={company}>
+                    {company}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={sortBy} onValueChange={setSortBy}>
+              <SelectTrigger>
+                <SelectValue placeholder="Ordenar por" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="date">Data</SelectItem>
+                <SelectItem value="amount">Valor</SelectItem>
+                <SelectItem value="description">Descrição</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Transactions Table */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle>Lista de Transações</CardTitle>
+            <Button variant="ghost" size="sm" onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}>
+              <ArrowUpDown className="h-4 w-4 mr-2" />
+              {sortOrder === "asc" ? "Crescente" : "Decrescente"}
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Descrição</TableHead>
+                <TableHead>Categoria</TableHead>
+                <TableHead>Empresa</TableHead>
+                <TableHead>Data</TableHead>
+                <TableHead>Pagamento</TableHead>
+                <TableHead className="text-right">Valor</TableHead>
+                <TableHead className="w-10"></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredTransactions.map((transaction) => (
+                <TableRow key={transaction.id}>
+                  <TableCell className="font-medium">{transaction.description}</TableCell>
+                  <TableCell>
+                    <Badge variant="outline">{transaction.category}</Badge>
+                  </TableCell>
+                  <TableCell className="text-sm text-gray-600 dark:text-gray-400">{transaction.company}</TableCell>
+                  <TableCell className="text-sm">{new Date(transaction.date).toLocaleDateString("pt-BR")}</TableCell>
+                  <TableCell className="text-sm">{transaction.paymentMethod}</TableCell>
+                  <TableCell
+                    className={`text-right font-semibold ${
+                      transaction.type === "receita" ? "text-green-600" : "text-red-600"
+                    }`}
+                  >
+                    {transaction.type === "receita" ? "+" : ""}R$ {Math.abs(transaction.amount).toLocaleString("pt-BR")}
+                  </TableCell>
+                  <TableCell>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem>
+                          <Edit className="h-4 w-4 mr-2" />
+                          Editar
+                        </DropdownMenuItem>
+                        <DropdownMenuItem className="text-red-600">
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Excluir
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
     </div>
   )
 }
